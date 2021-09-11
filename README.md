@@ -1,35 +1,38 @@
 # Pouch Vue
 
-## This Plugin is now under active development again thanks to @assemblethis
+## This Plugin is not under active development anymore since none of the maintaining members are actively using it.
 
 ##### Basic structure copied from https://github.com/buhrmi/vue-pouch with a lot of api changes though. TypeScript support included too.
 
 ## Installation
 Make sure to have `pouchdb-browser` (or `pouchdb` depending on what you need) `pouchdb-find` and `pouchdb-live-find` installed
-````
+````sh
     npm i pouchdb-browser pouchdb-live-find pouchdb-find
 ````
 
 Install via npm:
-```
+```sh
     npm install --save pouch-vue
 ```
 
 The only requirement is that `pouchdb-live-find` is installed:
-```
+```javascript
     import PouchDB from 'pouchdb-browser'
-    PouchDB.plugin(require('pouchdb-find'));
-    PouchDB.plugin(require('pouchdb-live-find'));
+    import PouchFind from 'pouchdb-find'
+    import PouchLiveFind from 'pouchdb-live-find'
+    
+    PouchDB.plugin(PouchFind)
+    PouchDB.plugin(PouchLiveFind)
 ```
 
 If you want to use remote databases (CouchDB, Cloudant, etc.), you should also install the authentication plugin:
-```
+```javascript
     PouchDB.plugin(require('pouchdb-authentication'));
 ```
 Then, plug VuePouch into Vue:
-```
+```javascript
     import Vue from 'vue';
-    import PouchVue from 'pouchVue';
+    import PouchVue from 'pouch-vue';
     
     Vue.use(PouchVue, {
       pouch: PouchDB,    // optional if `PouchDB` is available on the global object
@@ -42,7 +45,8 @@ Then, plug VuePouch into Vue:
 
 PouchDB v7.0 introduced [an issue with fetch using different defaults than XHR for cross-domain requests](https://github.com/pouchdb/pouchdb/issues/7391). The issue was fixed in PouchDB v7.1.1 so that fetch defaults now include 'credentials' just as XHR defaults come with credentials. If you are using PouchDB v7.0 you will get a 401 Unauthorized error. The workaround for PouchDB v7.0 is to override the fetch function in the defaults:
 
-```Vue.use(pouchVue,{
+```javascript
+Vue.use(pouchVue,{
   pouch: PouchDB,
   defaultDB: 'todos',
   optionsDB: {
@@ -77,7 +81,7 @@ ___
 * `$pouch.sync(localDatabase, OPTIONAL remoteDatabase, OPTIONAL options)`: The optional remoteDatabase parameter will use the default db set in the pouch options initially. Basically the same as PouchDB.sync(local, remote, {live: true, retry: true}). Also, if the browser has an active session cookie, it will fetch session data (username, etc) from the remote server. **BONUS:** If your remote database runs CouchDB 2.0 or higher, you can also specify a Mango Selector that is used to filter documents coming from the remote server. Callback functions will be invoked with the name `pouchdb-[method]-[type]`. So in this case you can use `this.$on('pouchdb-sync-change', callback(data))` to listen when a change occurs. See https://pouchdb.com/api.html#sync for a full list of events you can use.
 
 **default options (will be merged with the options passed in)**:
- ```
+ ```javascript
 {
     live: true,
     retry: true,
@@ -90,7 +94,7 @@ ___
 }
 ```
 **For example:**
-```
+```javascript
     $pouch.sync('complaints', 'https:/42.233.1.44/complaints', {
         selector: {
             type: 'complaint',
@@ -128,10 +132,10 @@ ___
 <template>
   <div class="todos">
     <input v-model="message" placeholder="New Todo">
-    <button @click="$pouch.post('todos', {message: message});message=''">Save Todo</button>
+    <button @click="$pouch.post({message: message},{},'todos');message=''">Save Todo</button>
     <div v-for="todo in todos">
-      <input v-model="todo.message" @change="$pouch.put('todos', todo)">
-      <button @click="$pouch.remove('todos', todo)">Remove</button>
+      <input v-model="todo.message" @change="$pouch.put(todo,{},'todos')">
+      <button @click="$pouch.remove(todo,{},'todos')">Remove</button>
     </div>
   </div>
 </template>
@@ -196,7 +200,7 @@ ___
 
 If you only want to sync a single document that matches a selector, use `first: true`:
 
-```vue
+```javascript
 module.exports = {
   // ...
   pouch: {
@@ -217,7 +221,7 @@ TypeScript example with a TypeScript file to include the pouch-vue plugin and a 
 using the plugin.
 
 main.ts
-```vue
+```typescript
 
 import { Component, Vue } from 'vue-property-decorator';
 import PouchDB from 'pouchdb-browser';
@@ -251,10 +255,10 @@ Todos.vue
 <template>
   <div class="todos">
     <input v-model="message" placeholder="New Todo">
-    <button @click="$pouch.post('todos', {message: message});message=''">Save Todo</button>
+    <button @click="$pouch.post({message: message},{},'todos');message=''">Save Todo</button>
     <div v-for="todo in todos">
-      <input v-model="todo.message" @change="$pouch.put('todos', todo)">
-      <button @click="$pouch.remove('todos', todo)">Remove</button>
+      <input v-model="todo.message" @change="$pouch.put(todo,{},'todos')">
+      <button @click="$pouch.remove(todo,{},'todos')">Remove</button>
     </div>
   </div>
 </template>
@@ -282,7 +286,7 @@ export default class Todos extends Vue {
 
 ### User Authentication
 
-```vue
+```javascript
  this.$pouch.connect(this.credentials.username, this.credentials.password)
     .then((res) => {
         let isUnauthorized = res.error === 'unauthorized',
@@ -303,7 +307,7 @@ export default class Todos extends Vue {
 ```
 
 ### Handle Sessions
-```
+```javascript
 this.$pouch.getSession().then((data) => {
     if (data.status === 0) {
         this.$router.push('/login');
